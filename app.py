@@ -89,7 +89,7 @@ def admin_panel():
     6.
     https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
     Unvalidated redirects - attacker can edit a redirect link to send user to malicious website : http://127.0.0.1:5000/redirect?destination=https://google.com/
-    
+    Generalise errors
 '''
 @app.route('/redirect', methods=['GET'])
 def redirect_handler():
@@ -102,7 +102,8 @@ def redirect_handler():
 
 '''
     7.
-    SQL Injection, XSS vulnerability
+    SQL Injection, 
+    XSS vulnerability
 '''
 @app.route('/comments', methods=['GET', 'POST'])
 def comments():
@@ -120,7 +121,13 @@ def comments():
     comments_query = text("SELECT username, text FROM comments")
     comments = db.session.execute(comments_query).fetchall()
     return render_template('comments.html', comments=comments)
-
+'''
+    8.
+    Traversal attack - can escape the directory for the downloads
+    Validating file type - can download any file
+    Generalise errors
+    Sanitise variables
+'''
 @app.route('/download', methods=['GET'])
 def download():
     # Get the filename from the query parameter
@@ -146,12 +153,22 @@ def download():
         return "File not found", 404
     except PermissionError:
         return "Permission denied while accessing the file", 403
-        
+
+'''
+    
+'''        
 @app.route('/downloads', methods=['GET'])
 def download_page():
     return render_template('download.html')
 
-
+'''
+    9.
+    SQL Injection - user_id - needs to be bound (flask corrects this on line 172 )
+    Access control - check user privillages
+    Error generalisation
+    
+    http://127.0.0.1:5000/profile/1'); INSERT INTO users (username, password, email, about) VALUES ('newuser', 'newpassword', 'hackerman@gmail.com', 'get hacked');-- 
+'''
 @app.route('/profile/<int:user_id>', methods=['GET'])
 def profile(user_id):
     query_user = text(f"SELECT * FROM users WHERE id = {user_id}")
@@ -165,15 +182,28 @@ def profile(user_id):
         return "User not found or unauthorized access.", 403
 from flask import request
 
+'''
+    10.
+    XSS - not sanitized - can be malicious code exection
+'''
 @app.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query')
     return render_template('search.html', query=query)
 
+'''
+    11. 
+    Doesnt exist? Gives detailed information IRT makeup of the site
+    disable - https://flask.palletsprojects.com/en/stable/debugging/
+'''
 @app.route('/forum')
 def forum():
     return render_template('forum.html')
 
+'''
+    12.
+    SQL Injection via username and password, 
+'''
 # Add login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -196,8 +226,11 @@ def login():
 
 
 
-
-
+'''
+    13.
+   Session isnt cleared, still vulnerable
+   https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#:~:text=Insufficient%20session%20expiration%20by%20the,it%20must%20still%20be%20active. 
+'''
 # Logout route
 @app.route('/logout')
 def logout():
