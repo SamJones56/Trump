@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 app = Flask(__name__)
 ''' 
+    1. 
     Coding a secret key is a security risk : 
     https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY  "A secret key that will be used for securely signing the session cookie and can 
     be used for any other security related needs by extensions or your application. It should be a long random bytes or str"
@@ -19,28 +20,41 @@ app.secret_key = 'trump123'  # Set a secure secret key
 
 # Configure the SQLite database
 '''
+    2. 
     The trump.db file is located within the root directory, this means that is accessible via a http request to download.
     - trump.db needs to be moved to a different directory that cant be accessed via browsers.
     - Should be encrypted to avoid reading
     - The path is hard coded, needs to be enviroment variable
 '''
-db_path = os.path.join(os.path.dirname(__file__), 'trump.db')
+db_path = os.path.join(os.path.dirname(__file__), 'trump.db')   # Path to database 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database
 db = SQLAlchemy(app)
 
-# Example Model (Table)
+# Example Model (Table) - This is used to create a user class for the db - creates a table
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    '''
+    3. 
+    https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#:~:text=has%20smaller%20limits).-,Pre%2DHashing%20Passwords%20with%20bcrypt,salt%2C%20%24cost)%20).
+    https://www.geeksforgeeks.org/password-hashing-with-bcrypt-in-flask/
+    username and password are being stored as unhashed/unsalted strings
+    '''
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
 
+    # like toString method in java
     def __repr__(self):
         return f'<User {self.username}>'
 
-# Function to run the SQL script if database doesn't exist
+# Function to run the SQL script if database doesn't exist > This checks to see if trump.tp exists, if not creates a new trump.db via trump.sql... 
+'''
+    4. 
+    - File is web accessible > move directory of trump.db and trump.sql
+    - Integrity check of trump.sql (Hash)
+'''
 def initialize_database():
     if not os.path.exists('trump.db'):
         with sqlite3.connect('trump.db') as conn:
@@ -51,6 +65,9 @@ def initialize_database():
             print("Database initialized with script.")
 
 # Existing routes
+'''
+    5. admin_panel is accessible without any checks
+'''
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -68,6 +85,12 @@ def admin_panel():
     return render_template('admin_panel.html')
 
 # Route to handle redirects based on the destination query parameter
+'''
+    6.
+    https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    Unvalidated redirects - attacker can edit a redirect link to send user to malicious website : http://127.0.0.1:5000/redirect?destination=https://google.com/
+    
+'''
 @app.route('/redirect', methods=['GET'])
 def redirect_handler():
     destination = request.args.get('destination')
@@ -77,7 +100,10 @@ def redirect_handler():
     else:
         return "Invalid destination", 400
 
-
+'''
+    7.
+    SQL Injection, XSS vulnerability
+'''
 @app.route('/comments', methods=['GET', 'POST'])
 def comments():
     if request.method == 'POST':
